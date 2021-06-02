@@ -26,7 +26,7 @@ public class AddUseHash {
         int result[] = new int[2];
         for(int i = 0;i<numbers.length;i++){
             if(map.containsKey(target-numbers[i])){
-                        result[0] =map.get(target-numbers[i]);
+                result[0] =map.get(target-numbers[i]);
                 result[1] =i+1;
                 }else{
                 map.put(numbers[i],i);
@@ -34,5 +34,11 @@ public class AddUseHash {
             }
         }
         return null;
+    }
+
+    public static void main(String[] args) {
+        int input[] = {2, 5, 4};
+        System.out.println(twoSum(input,9));
+
     }
 }
