@@ -32,7 +32,6 @@ class MyCallable implements Callable<Object> {
     MyCallable(String taskNum) {
         this.taskNum = taskNum;
     }
-
     public Object call() throws Exception {
         System.out.println(">>>" + taskNum + "任务启动");
         Date dateTmp1 = new Date();

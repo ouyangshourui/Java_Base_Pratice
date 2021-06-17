@@ -6,7 +6,7 @@ public class TestSync
     {
         for (int i = 0; i < 1000; i++)
         {
-            System.out.println("execute run1");
+            System.out.println("execute run1"+i);
             try
             {
                 Thread.sleep(1000);
@@ -25,7 +25,7 @@ public class TestSync
     {
         for (int i = 0; i < 1000; i++)
         {
-            System.out.println("execute run2");
+            System.out.println("execute run2"+i);
             try
             {
                 Thread.sleep(1000);

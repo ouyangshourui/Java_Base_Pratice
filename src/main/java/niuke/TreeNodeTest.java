@@ -1,20 +1,14 @@
-/**
- * Alipay.com Inc.
- * Copyright (c) 2004-2021 All Rights Reserved.
- */
+
 package niuke;
 
 import java.util.ArrayList;
-
 /**
- * @author yougu
- * @version : TreeNode.java, v 0.1 2021年06月03日 4:55 下午 yougu Exp $
- */
 public class TreeNodeTest {
  class TreeNode {
         int val = 0;
         TreeNode left = null;
         TreeNode right = null;
+     TreeNode next = null;
       }
 
     ArrayList<Integer> pre=new ArrayList<>();
@@ -62,4 +56,49 @@ public class TreeNodeTest {
         pos.add(root.val);
     }
 
+    TreeNode invertTree(TreeNode root){
+        if(root == null){
+            return  null;
+        }
+
+        TreeNode tmp = root.left;
+        root.left = root.left;
+        root.right = tmp;
+        invertTree(root.left);
+        invertTree(root.right);
+    }
+    TreeNode connectNode(TreeNode root){
+        if(root==null) return null;
+        connectNode(root.left,root.right) ;
+        return root;
+    }
+
+    public void connectTwoNode(TreeNode node1,TreeNode node2){
+        if(node1 ==null || node2 ==null){
+            return ;
+        }
+         node1.next= node2;
+        // 连接相同父节点的两个子节点
+        connectTwoNode(node1.left, node1.right);
+        connectTwoNode(node2.left, node2.right);
+        // 连接跨越父节点的两个子节点
+        connectTwoNode(node1.right, node2.left);
+    }
+
+    public boolean isValidBST(TreeNode root){
+
+        return isValidBST( root,null,null);
+    }
+
+    public boolean isValidBST(TreeNode root,TreeNode min,TreeNode max){
+        if(root ==null) return true;
+        if(min!=null && root.val <=min.val)
+            return false;
+        if(max!=null && root.val <=max.val)
+            return false;
+        return isValidBST( root.left,min,root)|| isValidBST(root.right, min, max);
+    }
+
+
 }
+**/
