@@ -20,6 +20,8 @@ public class MedianHolder {
         }
     });
 
+    static PriorityQueue<Integer> maxHeap1 = new PriorityQueue<>(10,(o1, o2) -> o1-o2);
+
     static PriorityQueue<Integer> minHeap = new PriorityQueue<>(new Comparator<Integer>() {
         @Override
         public int compare(Integer o1, Integer o2) {
