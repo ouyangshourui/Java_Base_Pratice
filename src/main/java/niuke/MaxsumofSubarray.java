@@ -49,7 +49,7 @@ public int maxsumofSubarray (int[] arr) {
         int res = arr[0];
         for(int i =1;i<arr.length;i++){
             dp[i] = dp[i-1]>0?(dp[i-1]+arr[i]):arr[i];
-            res = Math.max(res,dp[i]);
+             res = Math.max(res,dp[i]);
         }
         return res;
 
