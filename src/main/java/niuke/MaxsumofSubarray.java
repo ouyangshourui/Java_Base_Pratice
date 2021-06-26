@@ -42,6 +42,18 @@ public int maxsumofSubarray (int[] arr) {
 
     }
 
+    public  static  int maxsumofSubarray11 (int[] arr) {
+        // write code here
+        int[] dp = new int[arr.length];
+        dp[0] = arr[0];
+        int res = arr[0];
+        for(int i =1;i<arr.length;i++){
+            dp[i] = dp[i-1]>0?(dp[i-1]+arr[i]):arr[i];
+            res = Math.max(res,dp[i]);
+        }
+        return res;
+
+    }
 
     public static String solve(String str) {
         if(str ==null)

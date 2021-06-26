@@ -4,7 +4,6 @@
  */
 package niuke;
 
-import scala.Int;
 
 import java.util.ArrayList;
 
