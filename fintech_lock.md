@@ -35,20 +35,36 @@
 ## 三、决策树可视化
 ```mermaid
 graph TD
-    A[是否需要强一致性?] -->|是| B{单资源操作?}
-    A -->|否| C{读多写少?}
+    A[金融操作是否需要强一致性?] -->|是| B{涉及多资源/系统?}
+    A -->|否| C{允许数据延迟?}
     
-    B -->|是| D{吞吐量>5k TPS?}
-    B -->|否| E{需要可重入?}
+    B -->|是| D{吞吐量要求>5k TPS?}
+    B -->|否| E{需要事务补偿机制?}
     
-    D -->|是| F[分段锁]
-    D -->|否| G[ReentrantLock]
+    D -->|是| F[分段锁+2PC]
+    D -->|否| G[分布式事务框架]
     
-    E -->|是| H[StampedLock]
-    E -->|否| I[CAS无锁化]
+    E -->|是| H[事务中间件+TCC]
+    E -->|否| I[本地事务+消息队列]
     
-    C -->|是| J[ReadWriteLock]
-    C -->|否| K[LongAdder]
+    C -->|允许短时不一致| J{数据可修复?}
+    C -->|需最终一致| K{写入并发量?}
+    
+    J -->|是| L[异步对账+补偿]
+    J -->|否| M[拒绝服务并报警]
+    
+    K -->|高并发>10k| N[LongAdder+分片]
+    K -->|普通并发| O[版本号控制]
+    
+    style A fill:#4CAF50,color:white
+    style F fill:#2196F3,color:white
+    style G fill:#2196F3,color:white
+    style H fill:#2196F3,color:white
+    style I fill:#2196F3,color:white
+    style L fill:#FF9800,color:white
+    style M fill:#FF9800,color:white
+    style N fill:#FF9800,color:white
+    style O fill:#FF9800,color:white
 ```
 
 
