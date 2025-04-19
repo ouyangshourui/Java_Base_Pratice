@@ -294,5 +294,23 @@ public class ThreePhaseTransferCoordinator {
 }
 ```
 
+## ReentrantLock 与 ConcurrentHashMap 的区别及代码示例
+​​​​	
+
+
+| 场景   | ​​推荐方案​​	​​​​            | 理由|                                                             
+|--------------|----------------------|-------------|
+|复杂事务（如跨账户转账）|	ReentrantLock	|需精确控制多个资源的锁顺序|
+|高频读写的共享配置	|ConcurrentHashMap|	内置分段锁优化，无需手动管理|
+|延迟敏感的计数器（如交易量统计）|	ConcurrentHashMap + LongAdder	|结合分段计数器和CAS提升性能|
+|需条件变量控制（如库存预警）|	ReentrantLock + Condition	支持等待/通知机|
+
+
+
+```java
+
+```
+
+
 
 
