@@ -71,18 +71,21 @@ graph TD
     classDef important fill:#f9f,stroke:#333,stroke-width:2px;
 ```
 ### ​​Java锁类型对比表（含代码示例）​​
+以下是添加代码示例列的更新版表格：
 
+---
 
-**代码说明**
-1. 内置锁：直接修饰方法或代码块，自动管理锁。
-2. 显式锁：必须手动释放锁，`try-finally`确保释放。
-3. 读写锁：写锁独占，读锁共享，提高读并发性能。
-4. StampedLock：乐观读失败时转为悲观读锁，避免数据不一致。
-5. 信号量：通过`acquire()`和`release()`控制并发线程数。
-6. 条件变量：需配合显式锁使用，实现线程间协作。
+**Java锁类型对比表（含代码示例）**
 
-通过代码示例可快速理解各类锁的核心用法！ 🔒🚀
-
+| 锁类型               | 实现方式                                                                 | 可重入性 | 公平性               | 锁模式               | 中断支持 | 适用场景                     | 代码示例                                                                                     |
+|--------------------------|-----------------------------------------------------------------------------|--------------|--------------------------|--------------------------|--------------|----------------------------------|-----------------------------------------------------------------------------------------------|
+| 内置锁 (`synchronized`) | 通过`synchronized`修饰方法或代码块                                            | ✔️           | 默认非公平               | 独占锁                   | ❌           | 简单同步需求（如单例、计数器）   | ```java<br>public synchronized void increment() {<br>    count++;<br>}```                    |
+| 显式锁 (`ReentrantLock`) | 实现`Lock`接口，手动调用`lock()`/`unlock()`                                   | ✔️           | 支持公平/非公平（可选）  | 独占锁                   | ✔️           | 复杂同步控制（如可中断、超时）   | ```java<br>Lock lock = new ReentrantLock();<br>lock.lock();<br>try {<br>    // 临界区<br>} finally {<br>    lock.unlock();<br>}``` |
+| 读写锁 (`ReentrantReadWriteLock`) | 分离读锁（共享）和写锁（独占）                                               | ✔️           | 支持公平/非公平（可选）  | 读锁共享，写锁独占       | ✔️（写锁）   | 读多写少场景（如缓存）           | ```java<br>ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();<br>rwLock.writeLock().lock();<br>try {<br>    // 写操作<br>} finally {<br>    rwLock.writeLock().unlock();<br>}``` |
+| StampedLock           | 提供写锁、读锁和乐观读三种模式                                               | ❌           | 默认非公平               | 写锁独占，读锁共享       | ✔️（写锁）   | 高并发读场景（如无竞争读取）     | ```java<br>StampedLock sl = new StampedLock();<br>long stamp = sl.tryOptimisticRead();<br>// 读取数据<br>if (!sl.validate(stamp)) {<br>    stamp = sl.readLock();<br>    // 重新读取<br>    sl.unlockRead(stamp);<br>}``` |
+| 信号量 (`Semaphore`)   | 基于许可证的并发控制（非严格锁）                                             | ✔️（可配置） | 支持公平/非公平（可选）  | 共享资源                 | ✔️           | 资源池管理（如数据库连接池）     | ```java<br>Semaphore semaphore = new Semaphore(5);<br>semaphore.acquire();<br>try {<br>    // 使用资源<br>} finally {<br>    semaphore.release();<br>}``` |
+| 条件变量 (`Condition`) | 与`Lock`结合使用（如`lock.newCondition()`）                                  | -            | -                        | 依赖关联的锁             | ✔️           | 线程间协调（如生产者-消费者）    | ```java<br>Lock lock = new ReentrantLock();<br>Condition condition = lock.newCondition();<br>lock.lock();<br>try {<br>    condition.await(); // 等待<br>    condition.signal(); // 唤醒<br>} finally {<br>    lock.unlock();<br>}``` |
+---
 
 ## 4.性能与一致性权衡矩阵及代码示例
 
