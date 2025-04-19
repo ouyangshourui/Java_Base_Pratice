@@ -44,7 +44,7 @@
 graph TD
     Start[开始选择锁机制] --> ThreadContention{判断线程竞争强度}
     
-    ThreadContention -->|单线程重复访问| BiasLock[偏向锁]
+    ThreadContention -->|单线程重复访问| BiasLock[偏向锁：synchronized系列]
     ThreadContention -->|低竞争/交替执行| LightweightLock[轻量级锁 CAS自旋]
     ThreadContention -->|高并发竞争| HeavyLock[进入分布式锁判断]
     
