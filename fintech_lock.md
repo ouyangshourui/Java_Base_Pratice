@@ -138,7 +138,7 @@ public class MarketDataCache {
 ## 提交（2PC）或三阶段提交（3PC）协议
 - 金融转账​​：用户A向用户B转账100元，需保证账户扣款与到账的原子性。这个代码使用2PC和3PC如何处理？
 - 2PC 代码
-  ```java
+ ```java
   // 参与者接口
 public interface AccountParticipant {
     boolean prepare(String transactionId);  // 准备阶段
