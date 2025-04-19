@@ -40,3 +40,42 @@ graph TD
 | 强一致性     | 分段ReentrantLock    | 8,500       | 0.3ms    | 账户余额更新           | [分段锁示例](#分段reentrantlock示例)                                    |
 | 最终一致性   | StampedLock乐观读    | 12,000      | 0.1ms    | 行情数据缓存           | [StampedLock示例](#stampedlock乐观读示例)                               |
 | 最终一致性   | LongAdder            | 100,000     | 0.01ms   | 交易点击统计           | [LongAdder示例](#longadder示例)  
+
+
+
+
+##分段ReentrantLock示例
+```java
+// 高并发账户系统
+public class ShardedAccountService {
+    private final int SHARD_COUNT = 16;
+    private final ReentrantLock[] locks = new ReentrantLock[SHARD_COUNT];
+    
+    public ShardedAccountService() {
+        for (int i = 0; i < SHARD_COUNT; i++) {
+            locks[i] = new ReentrantLock(true); // 公平锁
+        }
+    }
+
+    public void transfer(String from, String to, BigDecimal amount) {
+        int fromShard = from.hashCode() % SHARD_COUNT;
+        int toShard = to.hashCode() % SHARD_COUNT;
+        
+        // 按顺序加锁避免死锁
+        if (fromShard < toShard) {
+            locks[fromShard].lock();
+            locks[toShard].lock();
+        } else {
+            locks[toShard].lock();
+            locks[fromShard].lock();
+        }
+        
+        try {
+            // 执行转账逻辑
+        } finally {
+            locks[fromShard].unlock();
+            locks[toShard].unlock();
+        }
+    }
+}
+```
