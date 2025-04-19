@@ -315,9 +315,7 @@ public class ThreePhaseTransferCoordinator {
 ```
 
 ## ReentrantLock 与 ConcurrentHashMap 的区别及代码示例
-​​​​	
-
-
+​​​
 | 场景   | ​​推荐方案​​	​​​​            | 理由|                                                             
 |--------------|----------------------|-------------|
 |复杂事务（如跨账户转账）|	ReentrantLock	|需精确控制多个资源的锁顺序|
@@ -325,30 +323,54 @@ public class ThreePhaseTransferCoordinator {
 |延迟敏感的计数器（如交易量统计）|	ConcurrentHashMap + LongAdder	|结合分段计数器和CAS提升性能|
 |需条件变量控制（如库存预警）|	ReentrantLock +Condition| 	支持等待/通知机|
 
- ```mermaid
+### 流程图
+```mermaid
 graph TD
-    F1[分段锁设计 Java7] --> F12[每段独立加锁]
+    A[为什么需要ConcurrentHashMap?] --> B[多线程场景下的HashMap线程不安全]
+    B --> C[传统解决方案: Hashtable/Collections.synchronizedMap]
+    C --> D[问题: 全局锁导致性能瓶颈]
+    
+    D --> E[设计目标: 高并发+线程安全]
+    E --> F[实现方案]
+    
+    F --> F1[分段锁设计 Java7]
+    F1 --> F11[将数据分段存储]
+    F1 --> F12[每段独立加锁]
     F12 --> F121[每个Segment继承ReentrantLock]
-    F12 --> F122[put操作时先定位Segment]
-    F12 --> F123[调用segment.lock()获取锁]
-    F12 --> F124[其他Segment仍可访问]
+    F12 --> F122[put时定位Segment加锁]
+    F12 --> F123[其他Segment仍可访问]
     
-    F2[CAS+synchronized Java8+] --> F22[CAS实现无锁化操作]
-    F22 --> F221[数组初始化时CAS设置sizeCtl]
-    F22 --> F222[新建节点时CAS设置数组元素]
-    F22 --> F223[更新计数器时CAS递增]
+    F --> F2[CAS+synchronized Java8+]
+    F2 --> F21[数组头节点作为锁单元]
+    F2 --> F22[CAS无锁化操作]
+    F22 --> F221[CAS初始化数组]
+    F22 --> F222[CAS设置头节点]
+    F22 --> F223[CAS更新计数器]
+    F2 --> F23[链表转红黑树]
+    F23 --> F231[链长≥8时转换]
+    F23 --> F232[数组长度≥64]
+    F23 --> F233[树节点保持链表访问]
     
-    F2 --> F23[链表转红黑树优化查询]
-    F23 --> F231[链表长度>=8时转换]
-    F23 --> F232[树化前检查数组长度>=64]
-    F23 --> F233[TreeNode继承LinkedHashMap.Entry]
-    F23 --> F234[红黑树查询复杂度O(logN)]
+    E --> G[关键技术]
+    G --> G1[并发控制]
+    G1 --> G11[Segment锁机制]
+    G1 --> G12[Node头锁机制]
+    
+    G --> G2[内存可见性]
+    G2 --> G21[volatile修饰节点]
+    G2 --> G22[Unsafe内存屏障]
+    
+    G --> G3[扩容机制]
+    G3 --> G31[多线程协同迁移]
+    G3 --> G32[增量数据转移]
+    
+    E --> H[实现效果]
+    H --> H1[并发读不阻塞]
+    H --> H2[写操作分段竞争]
+    H --> H3[迭代器弱一致性]
 ```
 
-
-
-
-
+### ConcurrentHashMap java代码
 ```java
 import java.util.concurrent.*;
 public class StockTradeCounter {
