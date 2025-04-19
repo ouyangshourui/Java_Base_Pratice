@@ -33,7 +33,7 @@ graph TD
 
 ## 4.性能与一致性权衡矩阵及代码示例
 
-## 权衡矩阵表
+### 权衡矩阵表
 | 一致性级别   | 锁方案                | 吞吐量(TPS) | 平均延迟 | 适用场景               | 代码示例                                                                 |
 |--------------|----------------------|-------------|----------|------------------------|--------------------------------------------------------------------------|
 | 强一致性     | Redisson RedLock     | 1,200       | 150ms    | 跨境支付结算           | [Redisson示例](#redisson-redlock示例)                                   |
@@ -44,7 +44,7 @@ graph TD
 
 
 
-##分段ReentrantLock示例
+#### 分段ReentrantLock示例
 ```java
 // 高并发账户系统
 public class ShardedAccountService {
@@ -79,3 +79,37 @@ public class ShardedAccountService {
     }
 }
 ```
+
+####StampedLock乐观读示例
+```java
+// 高频行情数据读取
+public class MarketDataCache {
+    private final StampedLock lock = new StampedLock();
+    private MarketData currentData;
+
+    public MarketData getMarketData() {
+        long stamp = lock.tryOptimisticRead();
+        MarketData data = currentData;
+        
+        if (!lock.validate(stamp)) {
+            stamp = lock.readLock();
+            try {
+                data = currentData;
+            } finally {
+                lock.unlockRead(stamp);
+            }
+        }
+        return data;
+    }
+
+    public void updateData(MarketData newData) {
+        long stamp = lock.writeLock();
+        try {
+            currentData = newData;
+        } finally {
+            lock.unlockWrite(stamp);
+        }
+    }
+}
+```
+
