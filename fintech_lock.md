@@ -111,13 +111,28 @@ public class AccountService implements Participant {
 
 ### 5.2 3PC优化方案
 ```mermaid
-sequenceDiagram
-    Coordinator->>Participant: CanCommit?
-    Participant->>Coordinator: 响应准备状态
-    Coordinator->>Participant: PreCommit
-    Participant->>Coordinator: 锁定资源
-    Coordinator->>Participant: DoCommit
-    Note right of Participant: 30秒超时自动回滚
+graph TD
+    subgraph 3PC协议流程
+        direction TB
+        A[协调者] -->|1.CanCommit请求| B[参与者]
+        B -->|2.资源预检查| B
+        B -->|3.返回准备状态| A
+        
+        A -->|4.PreCommit请求| B
+        B -->|5.锁定资源+记录日志| B
+        B -->|6.确认锁定| A
+        
+        A -->|7.DoCommit指令| B
+        B -->|8.执行提交操作| B
+        B -->|9.启动超时计时器| B
+        
+        classDef coordinator fill:#f9d,stroke:#333;
+        classDef participant fill:#9df,stroke:#333;
+        class A coordinator
+        class B participant
+    end
+    style A stroke-width:2px
+    style B stroke-width:2px
 ```
 
 ## 六、性能优化实践
