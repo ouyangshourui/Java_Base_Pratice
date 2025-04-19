@@ -42,36 +42,33 @@
 ## 三、决策树可视化
 ```mermaid
 graph TD
-    A[金融操作是否需要强一致性?] -->|是| B{涉及多资源/系统?}
-    A -->|否| C{允许数据延迟?}
+    Start[开始选择锁机制] --> ThreadContention{判断线程竞争强度}
     
-    B -->|是| D{吞吐量要求>5k TPS?}
-    B -->|否| E{需要事务补偿机制?}
+    ThreadContention -->|单线程重复访问| BiasLock[偏向锁]
+    ThreadContention -->|低竞争/交替执行| LightweightLock[轻量级锁 CAS自旋]
+    ThreadContention -->|高并发竞争| HeavyLock[进入分布式锁判断]
     
-    D -->|是| F[分段锁+2PC]
-    D -->|否| G[分布式事务框架]
+    HeavyLock --> DistributedCheck{是否需要跨进程协调}
     
-    E -->|是| H[事务中间件+TCC]
-    E -->|否| I[本地事务+消息队列]
+    DistributedCheck -->|是| DistributedLock{分布式锁类型}
+    DistributedCheck -->|否| LocalLock{本地锁类型}
     
-    C -->|允许短时不一致| J{数据可修复?}
-    C -->|需最终一致| K{写入并发量?}
+    DistributedLock -->|极高一致性要求| ZKLock[ZooKeeper锁]
+    DistributedLock -->|高吞吐需求| RedisLock[Redisson看门狗锁]
     
-    J -->|是| L[异步对账+补偿]
-    J -->|否| M[拒绝服务并报警]
+    LocalLock --> Granularity{锁粒度要求}
+    Granularity -->|细粒度行级锁| SegmentLock[ReentrantLock分段锁]
+    Granularity -->|粗粒度表级锁| SynchronizedLock[synchronized代码块]
     
-    K -->|高并发>10k| N[LongAdder+分片]
-    K -->|普通并发| O[版本号控制]
+    ZKLock --> ZKImpl[技术实现: Curator InterProcessMutex]
+    RedisLock --> RedisImpl[技术实现: Redisson MultiLock]
+    SegmentLock --> SegmentImpl[技术实现: ConcurrentHashMap分段锁]
     
-    style A fill:#4CAF50,color:white
-    style F fill:#2196F3,color:white
-    style G fill:#2196F3,color:white
-    style H fill:#2196F3,color:white
-    style I fill:#2196F3,color:white
-    style L fill:#FF9800,color:white
-    style M fill:#FF9800,color:white
-    style N fill:#FF9800,color:white
-    style O fill:#FF9800,color:white
+    Start -.-> ComplianceCheck[监管合规要求]:::important
+    ComplianceCheck -->|审计追溯| Binlog[数据库Binlog日志] 
+    ComplianceCheck -->|资金安全| XA[分布式事务XA协议]
+    
+    classDef important fill:#f9f,stroke:#333,stroke-width:2px;
 ```
 
 
