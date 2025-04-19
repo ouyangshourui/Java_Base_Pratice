@@ -325,10 +325,55 @@ public class ThreePhaseTransferCoordinator {
 |延迟敏感的计数器（如交易量统计）|	ConcurrentHashMap + LongAdder	|结合分段计数器和CAS提升性能|
 |需条件变量控制（如库存预警）|	ReentrantLock +Condition| 	支持等待/通知机|
 
+ ```mermaid
+graph TD
+    F1[分段锁设计 Java7] --> F12[每段独立加锁]
+    F12 --> F121[每个Segment继承ReentrantLock]
+    F12 --> F122[put操作时先定位Segment]
+    F12 --> F123[调用segment.lock()获取锁]
+    F12 --> F124[其他Segment仍可访问]
+    
+    F2[CAS+synchronized Java8+] --> F22[CAS实现无锁化操作]
+    F22 --> F221[数组初始化时CAS设置sizeCtl]
+    F22 --> F222[新建节点时CAS设置数组元素]
+    F22 --> F223[更新计数器时CAS递增]
+    
+    F2 --> F23[链表转红黑树优化查询]
+    F23 --> F231[链表长度>=8时转换]
+    F23 --> F232[树化前检查数组长度>=64]
+    F23 --> F233[TreeNode继承LinkedHashMap.Entry]
+    F23 --> F234[红黑树查询复杂度O(logN)]
+```
+
+
+
 
 
 ```java
+import java.util.concurrent.*;
+public class StockTradeCounter {
+    private static ConcurrentHashMap<String, Integer> tradeCount = new ConcurrentHashMap<>();
+    
+    public static void main(String[] args) throws InterruptedException {
+        ExecutorService executor = Executors.newFixedThreadPool(4);
 
+        // 模拟100次股票交易
+        for (int i = 0; i < 100; i++) {
+            executor.submit(() -> {
+                String stock = Math.random() > 0.5 ? "AAPL" : "GOOGL";
+                
+                // 原子递增（替代synchronized）
+                tradeCount.compute(stock, (k, v) -> (v == null) ? 1 : v + 1);
+            });
+        }
+
+        executor.shutdown();
+        executor.awaitTermination(1, TimeUnit.SECONDS);
+        
+        System.out.println("AAPL Trades: " + tradeCount.get("AAPL"));
+        System.out.println("GOOGL Trades: " + tradeCount.get("GOOGL"));
+    }
+}
 ```
 
 
