@@ -336,9 +336,129 @@ String res = ft.get();
     - 在线程池中无效，因线程复用，不推荐用于跨线程传递。
 
 ---
+### 3.7 CompletableFuture 和 ThreadPoolExecutor 的联系
+```java
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
-> **提示**：如需源码剖析、性能测试脚本或实战案例，可进一步交流！
----
+public class AdvancedCompletableFutureDemo {
+
+    // 模拟数据库/远程服务调用
+    static class DatabaseService {
+        static Map<Integer, String> userCache = Map.of(1, "Alice", 2, "Bob");
+        static Map<Integer, Double> priceCache = Map.of(1001, 2999.0, 1002, 5999.0);
+
+        static String fetchUserName(int userId) throws InterruptedException {
+            Thread.sleep(300); // 模拟网络延迟
+            return Optional.ofNullable(userCache.get(userId))
+                    .orElseThrow(() -> new RuntimeException("用户不存在"));
+        }
+
+        static double fetchPrice(int productId) throws InterruptedException {
+            Thread.sleep(500); // 模拟复杂计算
+            return Optional.ofNullable(priceCache.get(productId))
+                    .orElseThrow(() -> new RuntimeException("商品未找到"));
+        }
+
+        static boolean saveOrder(String orderInfo) {
+            return new Random().nextDouble() > 0.2; // 模拟80%成功率
+        }
+    }
+
+    public static void main(String[] args) throws Exception {
+        // 1. 创建两个专用线程池：IO密集型 vs 计算密集型
+        ThreadPoolExecutor ioPool = new ThreadPoolExecutor(
+                4, 8, 30, TimeUnit.SECONDS, 
+                new LinkedBlockingQueue<>(50),
+                new ThreadFactory() {
+                    private final AtomicInteger counter = new AtomicInteger(1);
+                    @Override
+                    public Thread newThread(Runnable r) {
+                        return new Thread(r, "IO-Thread-" + counter.getAndIncrement());
+                    }
+                });
+
+        ThreadPoolExecutor computePool = new ThreadPoolExecutor(
+                2, 2, 0, TimeUnit.SECONDS, // 固定大小避免上下文切换
+                new SynchronousQueue<>(),
+                new ThreadFactory() {
+                    private final AtomicInteger counter = new AtomicInteger(1);
+                    @Override
+                    public Thread newThread(Runnable r) {
+                        return new Thread(r, "Compute-Thread-" + counter.getAndIncrement());
+                    }
+                });
+
+        // 2. 构建复杂异步任务链
+        CompletableFuture<String> orderProcessing = CompletableFuture
+                .supplyAsync(() -> {
+                    System.out.println("【主任务】启动 | 线程: " + Thread.currentThread().getName());
+                    return new int[]{1, 1001}; // 用户ID + 商品ID
+                }, ioPool)
+                .thenApplyAsync(ids -> {
+                    try {
+                        System.out.println("↘ 解析用户信息 | 线程: " + Thread.currentThread().getName());
+                        return DatabaseService.fetchUserName(ids[0]) + "|" + ids[1];
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }, ioPool)
+                .thenCombineAsync(
+                    CompletableFuture.supplyAsync(() -> {
+                        try {
+                            System.out.println("↘ 并行获取价格 | 线程: " + Thread.currentThread().getName());
+                            return DatabaseService.fetchPrice(1001);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }, computePool),
+                    (userInfo, price) -> {
+                        System.out.println("↘ 合并数据 | 线程: " + Thread.currentThread().getName());
+                        return String.format("订单: %s 价格: %.2f", userInfo, price);
+                    }
+                )
+                .thenApplyAsync(order -> {
+                    System.out.println("↘ 生成订单号 | 线程: " + Thread.currentThread().getName());
+                    return "ORDER_" + UUID.randomUUID() + " | " + order;
+                }, ioPool)
+                .thenApplyAsync(order -> {
+                    System.out.println("↘ 保存订单 | 线程: " + Thread.currentThread().getName());
+                    return DatabaseService.saveOrder(order) ? order : null;
+                }, ioPool)
+                .handleAsync((result, ex) -> {
+                    if (ex != null) {
+                        System.err.println("❌ 异常处理: " + ex.getCause().getMessage());
+                        return "【失败】原因: " + ex.getCause().getMessage();
+                    } else if (result == null) {
+                        return "【失败】订单保存异常";
+                    }
+                    return "【成功】" + result;
+                }, ioPool)
+                .orTimeout(3, TimeUnit.SECONDS) // 整体超时控制
+                .whenComplete((res, ex) -> {
+                    if (ex != null && ex.getCause() instanceof TimeoutException) {
+                        System.err.println("⌛ 任务超时，取消后续操作");
+                    }
+                });
+
+        // 3. 获取结果并关闭资源
+        try {
+            System.out.println("\n最终结果:\n" + orderProcessing.get());
+        } finally {
+            ioPool.shutdown();
+            computePool.shutdown();
+            if (!ioPool.awaitTermination(1, TimeUnit.SECONDS)) {
+                ioPool.shutdownNow();
+            }
+            if (!computePool.awaitTermination(1, TimeUnit.SECONDS)) {
+                computePool.shutdownNow();
+            }
+        }
+    }
+}
+```
+
 
 ## 第四章：J.U.C 并发容器与并发集合
 
