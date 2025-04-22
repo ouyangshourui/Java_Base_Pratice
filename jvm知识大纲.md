@@ -32,6 +32,54 @@
 - 堆（Heap）——对象分配 & GC 管理
 - 方法区（Method Area）——类信息、常量、静态变量等
 - 运行时常量池（Runtime Constant Pool）
+# JVM 内存模型核心区域（附加 Demo 列）
+
+| 内存区域               | 线程私有/共享 | 存储内容                                                                 | 生命周期               | 异常类型                | Demo 代码示例                                                                 |
+|------------------------|---------------|--------------------------------------------------------------------------|------------------------|-------------------------|------------------------------------------------------------------------------|
+| **程序计数器**         | 线程私有      | 当前线程执行的字节码行号（分支、循环、异常处理指令的跳转依据）           | 线程创建到销毁         | 无                      | 无直接代码控制，但可通过调试观察：<br>`public void run() { int i=0; i++; ... }` |
+| **虚拟机栈**           | 线程私有      | 方法调用的栈帧（局部变量表、操作数栈等）                                  | 方法开始到结束         | `StackOverflowError`    | `void foo() { int a=1; bar(); }`<br>`void bar() { String s="stack"; }`        |
+| **本地方法栈**         | 线程私有      | Native 方法执行上下文                                                     | 线程创建到销毁         | `StackOverflowError`    | 需 JNI 调用：<br>`public native void nativeMethod();`                          |
+| **堆**                 | 线程共享      | 对象实例和数组                                                           | JVM 启动到关闭         | `OutOfMemoryError`      | `Object obj = new Object();`<br>`int[] arr = new int[10];`                     |
+| **方法区**             | 线程共享      | 类元信息、静态变量                                                       | JVM 启动到关闭         | `OutOfMemoryError`      | `public class Demo { static String NAME = "JVM"; }`                           |
+| **运行时常量池**       | 线程共享      | 字面量和符号引用                                                         | JVM 启动到关闭         | `OutOfMemoryError`      | `String s1 = "Hello";`<br>`String s2 = "Hello";  // 复用常量池`                |
+
+---
+### 完整 Demo 代码解释
+```java
+public class MemoryDemo {
+    // 【方法区】类元信息 & 静态变量
+    private static String CLASS_NAME = "MemoryDemo"; 
+
+    // 【堆】对象实例存储
+    private int instanceVar = 10; 
+
+    public static void main(String[] args) {
+        // 【虚拟机栈】局部变量 args、i
+        int i = 20; 
+
+        // 【堆】对象实例
+        MemoryDemo obj = new MemoryDemo(); 
+
+        // 【运行时常量池】字符串字面量
+        String s1 = "Hello"; 
+
+        // 【堆】对象实例（但内容"World"在常量池）
+        String s2 = new String("World"); 
+
+        // 【虚拟机栈】方法调用生成栈帧
+        obj.calculate(i); 
+    }
+
+    public void calculate(int param) {
+        // 【虚拟机栈】局部变量 param、result
+        int result = param * 2; 
+        System.out.println(result);
+    }
+
+    // 【本地方法栈】Native 方法调用
+    public native void nativeMethod(); 
+}
+ ```
 
 #### 2. 栈与堆的区别
 - 局部变量 vs 实例变量
