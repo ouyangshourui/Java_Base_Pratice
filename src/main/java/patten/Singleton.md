@@ -3,7 +3,8 @@
 - 解决了什么问题？
 - 如果不使用Singleton？该如何解决？
 - Singleton的分类，每个分类的是用场景和demo代码
-- 上面4个答案step by step 推到，然后输出markdown 文本，让我一键复制
+- 补充在java8和java8以上环境的使用架构选择表格
+- 上面5个答案step by step 推到，然后输出markdown 文本，让我一键复制
 
 
 # Java 单例模式（Singleton）详解
@@ -134,5 +135,49 @@ public enum EnumSingleton {
 | 静态内部类     | ✔️       | ✔️        | ❌      | 中         | 1.2+    |
 | 枚举式         | ✔️       | ❌        | ✔️      | 低         | 1.5+    |
 
-> 提示：Java5+推荐优先使用枚举实现，需要延迟加载时选择静态内部类方案。
+
+
+
+##spring 依赖注入的demo
+### XML配置注入（applicationContext.xml）
+```xml
+<!-- 构造函数注入[3](@ref) -->
+<bean id="smsService" class="com.example.service.SmsServiceImpl">
+    <constructor-arg name="gateway" value="Twilio"/>
+</bean>
+
+<!-- Setter注入[8](@ref) -->
+<bean id="emailServiceXML" class="com.example.service.EmailServiceImpl">
+    <property name="provider" value="Gmail API"/>
+</bean>
 ```
+### XML配置注入（applicationContext.xml）
+
+###  带依赖的控制器类
+```java
+@Component
+public class NotificationController {
+    // 字段注入（不推荐但常见）[1](@ref)
+    @Autowired  
+    private MessageService emailService;
+    
+    // 构造器注入（推荐方式）[5](@ref)
+    private final MessageService smsService;
+    
+    @Autowired
+    public NotificationController(@Qualifier("smsService") MessageService smsService) {
+        this.smsService = smsService;
+    }
+    
+    // Setter注入[7](@ref)
+    private MessageService pushService;
+    
+    @Autowired
+    public void setPushService(MessageService pushService) {
+        this.pushService = pushService;
+    }
+}
+```
+
+
+
